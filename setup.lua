@@ -1,1 +1,2 @@
-echo Running now FastRunOS setup.lua
+echo It seems, downloading the 'setup.lua' file was successfully.
+echo Running 'setup.lua'
