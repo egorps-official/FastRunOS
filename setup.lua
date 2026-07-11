@@ -1,1 +1,1 @@
-echo Running now: FastRunOS: setup.lua
+echo Running now FastRunOS.setup.lua
