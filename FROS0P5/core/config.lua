@@ -14,5 +14,6 @@ return {
     ["Resolution"] = {
         ["X"] = 80,
         ["Y"] = 25
-    }
+    },
+    ["AutoRun"] = {"/FROS0P5/libs/uicore.app"}
 }
