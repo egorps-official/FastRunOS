@@ -4,6 +4,8 @@
 
 -- Real-Time Thread Library for FastRunOS kernel
 
+local lib = {}
+
 --[[
 Codes:
 0x{type}{scriptNum}{code}
@@ -32,6 +34,10 @@ local computer = require("computer")
 local invoke = component.invoke
 local bootaddr = computer.getBootAddress()
 
+lastPID = -1
+lib.PID_TABLE = {}
+function lib.newProccess(path
+
 local function loadfile(addr, file)
   local handle = assert(invoke(addr, "open", file))
   local buffer = ""
@@ -43,4 +49,4 @@ local function loadfile(addr, file)
   return load(buffer, "=" .. file, "bt", _G)
 end
 
-function lib.
+return lib
