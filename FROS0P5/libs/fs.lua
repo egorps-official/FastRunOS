@@ -1,9 +1,10 @@
 local lib = {}
 
-local component = component or require("component")
+local component = require("component")
+local computer = require("computer")
 local invoke = component.invoke
+local bootaddr = computer.getBootAddress()
 
-local bootaddr, invoke = computer.getBootAddress()
 local function loadfile(addr, file)
     local handle = assert(invoke(addr, "open", file))
     local buffer = ""
@@ -14,5 +15,8 @@ local function loadfile(addr, file)
     invoke(addr, "close", handle)
     return load(buffer, "=" .. file, "bt", _G)
 end
+
+dAddrs = loadfile("/FROS0P5/core/config.lua")["DisksAddrs"]
+dAddrs["SYS"] = bootaddr
 
 return lib
