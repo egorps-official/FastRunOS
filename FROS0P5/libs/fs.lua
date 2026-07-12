@@ -7,7 +7,7 @@ Codes:
 Code:
   0x01 - Library:
     0x01 - fs:
-      0x00 - INVALID_ADDRESS
+      0x01 - INVALID_ADDRESS
 
 Message:
   INVALID_ADDRESS - Invalid Address or not a disk
@@ -39,20 +39,37 @@ function lib.loadfile(addr, file)
   return load(buffer, "=" .. file, "bt", _G)
 end
 
-function lib.scanDisks()
+function lib.scanDisks(onlyFormated)
+  if onlyFormated == nil then onlyFormated = true end
   local scanned = {}
   
   for addr, componentType in component.list() do
-      if componentType == "filesystem" then
+      if componentType == "filesystem" or (componentType == "drive" and onlyFormated == false) then
           table.insert(scanned, addr)
       end
   end
 end
 
 function lib.getDisk(addr)
-  if not (component.type(addr) == "filesystem") then
-    getLog(0x010100, "INVALID_ADDRESS", 2) -- 0 - все ок, 1 - предупреждение, 3 - ошибка, 4 - инфо
+  local info = getLog(0x010100, "OK", 0)
+  if component.type(addr) == "filesystem" then
+    local proxy = component.proxy(addr)
+    info["Formated"] = true
+    info["Filesystem"] = proxy
+    info["spaceTotal"] = proxy.spaceTotal()
+    info["spaceUsed"] = proxy.spaceUsed()
+    info["Label"] = proxy.getLabel()
+    info["isReadOnly"] = proxy.isReadOnly()
+  elseif component.type(addr) == "drive" then
+    local proxy = component.proxy(addr)
+    info["Formated"] = false
+    info["Filesystem"] = proxy
+    info["spaceTotal"] = proxy.getCapacity()
+    info["Label"] = proxy.getLabel()
+  else
+    return getLog(0x010101, "INVALID_ADDRESS", 2)
   end
+  return info
 end
 
 lib.addrs = loadfile("/FROS0P5/core/config.lua")["DisksAddrs"]
