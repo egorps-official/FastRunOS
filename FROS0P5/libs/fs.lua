@@ -74,6 +74,8 @@ function lib.scanDisks()
           if v == "" then lib.addrs[i] = addr break end
         end
       end
+    else
+      return getLog(0x010101, "INVALID_ADDRESS", 2)
     end
   end
 end
@@ -102,7 +104,29 @@ function lib.getDisk(addr)
 end
 
 function lib.format(addr)
+    local diskInfo = lib.getDisk(addr)
 
+    if not diskInfo or diskInfo.log.Code == 0x010101 or diskInfo.log.Code == 0x010102 then
+        return getLog(0x010101, "INVALID_ADDRESS", 2)
+    end
+  
+    local proxy = diskInfo.Filesystem
+
+    local function clearDirectory(path)
+        local list = proxy.list(path)
+        for _, name in ipairs(list) do
+            local fullPath = path == "/" and "/" .. name or path .. "/" .. name
+            if proxy.isDirectory(fullPath) then
+                clearDirectory(fullPath)
+                proxy.remove(fullPath)
+            else
+                proxy.remove(fullPath)
+            end
+        end
+    end
+
+    clearDirectory("/")
+    return getLog(0x010100, "OK", 0)
 end
 
 return lib
