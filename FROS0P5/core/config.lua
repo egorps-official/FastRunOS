@@ -15,5 +15,5 @@ return {
         ["X"] = 80,
         ["Y"] = 25
     },
-    ["AutoRun"] = {"/FROS0P5/libs/uicore.app"}
+    ["AutoRun"] = {"/FROS0P5/utils/uicore.app"}
 }
