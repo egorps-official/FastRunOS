@@ -15,10 +15,12 @@ Code:
     0x01 - rtlib:
       0x01 - INVALID_PID
       0x02 - FS_LIB_NOT_FOUND
+      0x03 - PROCCESS_ERR
 
 Message:
   INVALID_PID - Invalid Proccess ID
   FS_LIB_NOT_FOUND - File System Library wasn't found
+  PROCCESS_ERR - Custom Proccess Error
 ]]--
 
 local function getLog(code, msg, status)
@@ -59,22 +61,42 @@ end
 
 local lastPID = -1
 lib.PID_TABLE = {}
-local lastError = ""
+local lastErrorCode, lastErrorMsg, lastErrorStackDump
 local lastErrorPID = 0
 local lastErrorHandled = true
 function lib.newProccess(path, title)
   lastPID = lastPID + 1
+  local newPIDCopy = lastPID
   local function task()
-    
+    dividedPath = fs.getAddrPathByPath(path)
+    if true then -- здесь условие: если расширение dividedPath["path"] (то есть все что в конце после точки) соответствует .app
+      local ok, result = xpcall(function()
+        loadfile(dividedPath["addr"], dividedPath["path"]).run()
+      end, function(err)
+        lastErrorCode = err["Code"] or 0x000103
+        lastErrorMsg = err["Msg"] or err
+        lastErrorStackDump = debug.traceback()
+        lastErrorPID = newPIDCopy
+      end)
+    elseif false then -- если .lua
+      local ok, result = xpcall(function()
+        loadfile(dividedPath["addr"], dividedPath["path"])
+      end, function(err)
+        lastErrorCode = err["Code"] or 0x000103
+        lastErrorMsg = err["Msg"] or err
+        lastErrorStackDump = debug.traceback()
+        lastErrorPID = newPIDCopy
+      end)
+    end
   end
-  lib.PID_TABLE[lastPID] = {
+  lib.PID_TABLE[newPIDCopy] = {
     ["Path"] = path,
     ["Title"] = title,
     ["Thread"] = thread.create(task),
     ["Works"] = true
   }
   local log = getLog(0x000100, "OK", 0)
-  log["PID"] = lastPID
+  log["PID"] = newPIDCopy
   return log
 end
 
@@ -100,7 +122,16 @@ end
 _G.core = lib
 
 function lib.mainloop()
-  
+  while lastErrorHandled do
+    os.sleep(0.05)
+  end
+  for pid, _ in lib.PID_TABLE do
+    lib.killProccess(pid)
+  end
+  log = getLog(lastErrorCode, lastErrorMsg, 2)
+  log["StackDump"] = lastErrorStackDump
+  log["PID"] = lastErrorPID
+  return log
 end
 
 return lib
