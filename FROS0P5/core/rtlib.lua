@@ -9,16 +9,12 @@ Codes:
 0x{type}{scriptNum}{code}
 
 Code:
-  0x01 - Library:
-    0x01 - fs:
-      0x01 - INVALID_ADDRESS
-      0x02 - UNSCANNED_DISK
-      0x03 - LETTER_MAP_NOT_FOUND
+  0x00 - Core:
+    0x01 - rtlib:
+      0x01
 
 Message:
-  INVALID_ADDRESS - Invalid Address or not a disk
-  UNSCANNED_DISK - Attempt to get access to the disk before it gets scanned (by "scanDisks" method)
-  LETTER_MAP_NOT_FOUND - index "DisksAddrs" in config.lua wasn't found
+  0x01 - 
 ]]--
 
 local function getLog(code, msg, status)
