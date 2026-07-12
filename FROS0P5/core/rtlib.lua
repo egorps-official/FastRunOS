@@ -32,7 +32,7 @@ local computer = require("computer")
 local invoke = component.invoke
 local bootaddr = computer.getBootAddress()
 
-function lib.loadfile(addr, file)
+local function loadfile(addr, file)
   local handle = assert(invoke(addr, "open", file))
   local buffer = ""
   repeat
@@ -42,3 +42,5 @@ function lib.loadfile(addr, file)
   invoke(addr, "close", handle)
   return load(buffer, "=" .. file, "bt", _G)
 end
+
+function lib.
