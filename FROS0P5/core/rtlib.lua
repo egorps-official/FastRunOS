@@ -13,10 +13,10 @@ Codes:
 Code:
   0x00 - Core:
     0x01 - rtlib:
-      0x01
+      0x01 - INVALID_PID
 
 Message:
-  0x01 - 
+  INVALID_PID - Invalid Proccess ID
 ]]--
 
 local function getLog(code, msg, status)
@@ -36,7 +36,17 @@ local bootaddr = computer.getBootAddress()
 
 lastPID = -1
 lib.PID_TABLE = {}
-function lib.newProccess(path
+function lib.newProccess(path, title)
+  lastPID += 1
+  lib.PID_TABLE[lastPID] = {
+    ["Path"] = path,
+    ["Title"] = title,
+    ["Work"] = true
+  }
+  local log = getLog(0x000100, "OK"
+end
+
+function lib.stopProccess(PID)
 
 local function loadfile(addr, file)
   local handle = assert(invoke(addr, "open", file))
