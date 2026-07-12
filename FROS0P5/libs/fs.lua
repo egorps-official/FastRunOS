@@ -16,11 +16,13 @@ Code:
       0x01 - INVALID_ADDRESS
       0x02 - UNSCANNED_DISK
       0x03 - LETTER_MAP_NOT_FOUND
+      0x04 - INVALID_PATH
 
 Message:
   INVALID_ADDRESS - Invalid Address or not a disk
   UNSCANNED_DISK - Attempt to get access to the disk before it gets scanned (by "scanDisks" method)
   LETTER_MAP_NOT_FOUND - index "DisksAddrs" in config.lua wasn't found
+  INVALID_PATH - Invalid Path
 ]]--
 
 local function getLog(code, msg, status)
@@ -37,6 +39,8 @@ local component = require("component")
 local computer = require("computer")
 local invoke = component.invoke
 local bootaddr = computer.getBootAddress()
+local config = loadfile("/FROS0P5/core/config.lua")
+local serialization = require("serialization")
 
 local function loadfile(addr, file)
   local handle = assert(invoke(addr, "open", file))
@@ -52,7 +56,6 @@ end
 lib.addrs = nil
 
 function lib.init()
-  local config = loadfile("/FROS0P5/core/config.lua")
   lib.addrs = config and config["DisksAddrs"] or nil
   if lib.addrs == nil then return getLog(0x010103, "LETTER_MAP_NOT_FOUND", 2) end
   lib.addrs["SYS"] = bootaddr
@@ -66,18 +69,30 @@ function lib.scanDisks()
     if componentType == "filesystem" then
       table.insert(scanned, addr)
       local letter
-      for i, v in lib.addrs do
+      for i, v in pairs(lib.addrs) do
         if v == addr then letter = i break end
       end
       if not letter then
-        for i, v in lib.addrs do
-          if v == "" then lib.addrs[i] = addr break end
+        for i, v in pairs(lib.addrs) do
+          if v == "" then 
+            lib.addrs[i] = addr 
+            break 
+          end
         end
       end
-    else
-      return getLog(0x010101, "INVALID_ADDRESS", 2)
     end
   end
+  
+  config = loadfile("/FROS0P5/core/config.lua")
+  config["DiskAddrs"] = lib.addrs
+  serialization.serialize(config)
+  local f = io.open("/FROS0P5/core/config.lua", "w")
+  if f then
+    f:write(config)
+    f:close()
+  end
+  
+  return scanned
 end
 
 function lib.getDisk(addr)
@@ -127,6 +142,46 @@ function lib.format(addr)
 
     clearDirectory("/")
     return getLog(0x010100, "OK", 0)
+end
+
+function lib.getAddrPathByPath(path)
+    local letter = string.sub(path, 1, 1):upper()
+    local rest = string.sub(path, 3)
+    
+    if letter:match("%a") and string.sub(path, 2, 2) == ":" then
+        local addr = lib.addrs[letter]
+        if not addr or addr == "" then
+            return getLog(0x010104, "INVALID_PATH", 2)
+        end
+        local log = getLog(0x010100, "OK", 0)
+        log["addr"] = addr
+        log["path"] = "/" .. rest
+        return log
+    end
+    
+    if string.sub(path, 1, 4):upper() == "SYS:" then
+        local addr = lib.addrs["SYS"]
+        if not addr or addr == "" then
+            return getLog(0x010104, "INVALID_PATH", 2)
+        end
+        local log = getLog(0x010100, "OK", 0)
+        log["addr"] = addr
+        log["path"] = "/" .. string.sub(path, 5)
+        return log
+    end
+    
+    if string.sub(path, 1, 1) == "/" then
+        local addr = lib.addrs["SYS"]
+        if not addr or addr == "" then
+            return getLog(0x010104, "INVALID_PATH", 2)
+        end
+        local log = getLog(0x010100, "OK", 0)
+        log["addr"] = addr
+        log["path"] = path
+        return log
+    end
+    
+    return getLog(0x010104, "INVALID_PATH", 2)
 end
 
 return lib
