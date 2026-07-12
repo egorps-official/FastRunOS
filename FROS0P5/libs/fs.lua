@@ -14,13 +14,7 @@ Message:
 ]]--
 
 local function getLog(code, msg, status)
-  return {
-    "log": {
-      "Msg": msg,
-      "Code": code,
-      "Status": status
-    }
-  }
+  return { log = { Msg = msg, Code = code, Status = status } }
 end
 
 local component = require("component")
