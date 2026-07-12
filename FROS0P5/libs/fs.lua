@@ -1,3 +1,9 @@
+-- FastRunOS
+-- By egorps
+-- Licensed by MIT License
+
+-- File system library for "disk name by letter" systems
+
 local lib = {}
 
 --[[
@@ -8,9 +14,13 @@ Code:
   0x01 - Library:
     0x01 - fs:
       0x01 - INVALID_ADDRESS
+      0x02 - UNSCANNED_DISK
+      0x03 - LETTER_MAP_NOT_FOUND
 
 Message:
   INVALID_ADDRESS - Invalid Address or not a disk
+  UNSCANNED_DISK - Attempt to get access to the disk before it gets scanned (by "scanDisks" method)
+  LETTER_MAP_NOT_FOUND - index "DisksAddrs" in config.lua wasn't found
 ]]--
 
 local function getLog(code, msg, status)
@@ -32,47 +42,67 @@ function lib.loadfile(addr, file)
   local handle = assert(invoke(addr, "open", file))
   local buffer = ""
   repeat
-      local data = invoke(addr, "read", handle, math.maxinteger or math.huge)
-      buffer = buffer .. (data or "")
+    local data = invoke(addr, "read", handle, math.maxinteger or math.huge)
+    buffer = buffer .. (data or "")
   until not data
   invoke(addr, "close", handle)
   return load(buffer, "=" .. file, "bt", _G)
 end
 
-function lib.scanDisks(onlyFormated)
-  if onlyFormated == nil then onlyFormated = true end
+lib.addrs = nil
+
+function lib.init()
+  local config = loadfile("/FROS0P5/core/config.lua")
+  lib.addrs = config and config["DisksAddrs"] or nil
+  if lib.addrs == nil then return getLog(0x010103, "LETTER_MAP_NOT_FOUND", 2) end
+  lib.addrs["SYS"] = bootaddr
+  return getLog(0x010100, "OK", 0)
+end
+
+function lib.scanDisks()
   local scanned = {}
   
   for addr, componentType in component.list() do
-      if componentType == "filesystem" or (componentType == "drive" and onlyFormated == false) then
-          table.insert(scanned, addr)
+    if componentType == "filesystem" then
+      table.insert(scanned, addr)
+      local letter
+      for i, v in lib.addrs do
+        if v == addr then letter = i break end
       end
+      if not letter then
+        for i, v in lib.addrs do
+          if v == "" then lib.addrs[i] = addr break end
+        end
+      end
+    end
   end
 end
 
 function lib.getDisk(addr)
-  local info = getLog(0x010100, "OK", 0)
   if component.type(addr) == "filesystem" then
+    local info = getLog(0x010100, "OK", 0)
     local proxy = component.proxy(addr)
-    info["Formated"] = true
+    local letter
+    for i, v in lib.addrs do
+      if v == addr then letter = i break end
+    end
+    if not letter then
+      return getLog(0x010102, "UNSCANNED_DISK", 2)
+    end
+    info["Letter"] = letter
     info["Filesystem"] = proxy
     info["spaceTotal"] = proxy.spaceTotal()
     info["spaceUsed"] = proxy.spaceUsed()
     info["Label"] = proxy.getLabel()
     info["isReadOnly"] = proxy.isReadOnly()
-  elseif component.type(addr) == "drive" then
-    local proxy = component.proxy(addr)
-    info["Formated"] = false
-    info["Filesystem"] = proxy
-    info["spaceTotal"] = proxy.getCapacity()
-    info["Label"] = proxy.getLabel()
+    return info
   else
     return getLog(0x010101, "INVALID_ADDRESS", 2)
   end
-  return info
 end
 
-lib.addrs = loadfile("/FROS0P5/core/config.lua")["DisksAddrs"]
-lib.addrs["SYS"] = bootaddr
+function lib.format(addr)
+
+end
 
 return lib
