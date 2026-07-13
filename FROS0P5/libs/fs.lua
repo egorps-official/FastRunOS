@@ -39,7 +39,7 @@ local component = require("component")
 local computer = require("computer")
 local invoke = component.invoke
 local bootaddr = computer.getBootAddress()
-local config = loadfile(bootaddr, "/FROS0P5/core/config.lua")
+local config
 local serialization = require("serialization")
 
 local function loadfile(addr, file)
@@ -56,6 +56,7 @@ end
 lib.addrs = nil
 
 function lib.init()
+  config = loadfile(bootaddr, "/FROS0P5/core/config.lua")
   lib.addrs = config and config["DiskAddrs"] or nil
   if lib.addrs == nil then return getLog(0x010103, "LETTER_MAP_NOT_FOUND", 2) end
   lib.addrs["SYS"] = bootaddr
