@@ -86,10 +86,10 @@ function lib.scanDisks()
   
   config = loadfile(bootaddr, "/FROS0P5/core/config.lua")
   config["DiskAddrs"] = lib.addrs
-  serialization.serialize(config)
+  data = serialization.serialize(config)
   local f = io.open("/FROS0P5/core/config.lua", "w")
   if f then
-    f:write(config)
+    f:write(data)
     f:close()
   end
   
