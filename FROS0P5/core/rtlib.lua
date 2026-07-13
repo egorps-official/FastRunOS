@@ -49,7 +49,7 @@ local function loadfile(addr, file)
     buffer = buffer .. (data or "")
   until not data
   invoke(addr, "close", handle)
-  return load(buffer, "=" .. file, "bt", _G)
+  return load(buffer, "=" .. file, "bt", _G)()
 end
 
 local fs
