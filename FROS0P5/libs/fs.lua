@@ -56,7 +56,7 @@ end
 lib.addrs = nil
 
 function lib.init()
-  lib.addrs = config and config["DisksAddrs"] or nil
+  lib.addrs = config and config["DiskAddrs"] or nil
   if lib.addrs == nil then return getLog(0x010103, "LETTER_MAP_NOT_FOUND", 2) end
   lib.addrs["SYS"] = bootaddr
   return getLog(0x010100, "OK", 0)
