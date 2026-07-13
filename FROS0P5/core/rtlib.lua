@@ -55,7 +55,7 @@ end
 local fs
 
 function lib.init()
-  fs = loadfile("/FROS0P5/libs/fs.lua")
+  fs = loadfile(bootaddr, "/FROS0P5/libs/fs.lua")
   if fs == nil then return getLog(0x000102, "FS_LIB_NOT_FOUND", 2) end
   return getLog(0x000100, "OK", 0)
 end
