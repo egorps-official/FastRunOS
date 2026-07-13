@@ -16,11 +16,13 @@ Code:
       0x01 - INVALID_PID
       0x02 - FS_LIB_NOT_FOUND
       0x03 - PROCCESS_ERR
+      0x04 - INVALID_FILE
 
 Message:
   INVALID_PID - Invalid Proccess ID
   FS_LIB_NOT_FOUND - File System Library wasn't found
   PROCCESS_ERR - Custom Proccess Error
+  INVALID_FILE - File wasn't found
 ]]--
 
 local function getLog(code, msg, status)
@@ -55,7 +57,6 @@ local fs
 function lib.init()
   fs = loadfile("/FROS0P5/libs/fs.lua")
   if fs == nil then return getLog(0x000102, "FS_LIB_NOT_FOUND", 2) end
-  lib.addrs["SYS"] = bootaddr
   return getLog(0x000100, "OK", 0)
 end
 
@@ -65,11 +66,18 @@ local lastErrorCode, lastErrorMsg, lastErrorStackDump
 local lastErrorPID = 0
 local lastErrorHandled = true
 function lib.newProccess(path, title)
+  if not fs or not fs.getAddrPathByPath then
+    return getLog(0x000104, "INVALID_FILE", 2)
+  end
+  local dividedPath = fs.getAddrPathByPath(path)
+  if dividedPath.log and dividedPath.log.Code ~= 0x010100 then
+    return getLog(0x000104, "INVALID_FILE", 2)
+  end
   lastPID = lastPID + 1
   local newPIDCopy = lastPID
   local function task()
-    dividedPath = fs.getAddrPathByPath(path)
-    if true then -- здесь условие: если расширение dividedPath["path"] (то есть все что в конце после точки) соответствует .app
+    local extension = string.match(dividedPath["path"], "%.[^.]+$") or ""
+    if extension == ".app" then
       local ok, result = xpcall(function()
         loadfile(dividedPath["addr"], dividedPath["path"]).run()
       end, function(err)
@@ -77,16 +85,24 @@ function lib.newProccess(path, title)
         lastErrorMsg = err["Msg"] or err
         lastErrorStackDump = debug.traceback()
         lastErrorPID = newPIDCopy
+        lastErrorHandled = false
       end)
-    elseif false then -- если .lua
+    elseif extension == ".lua" then
       local ok, result = xpcall(function()
-        loadfile(dividedPath["addr"], dividedPath["path"])
+        loadfile(dividedPath["addr"], dividedPath["path"])()
       end, function(err)
         lastErrorCode = err["Code"] or 0x000103
         lastErrorMsg = err["Msg"] or err
         lastErrorStackDump = debug.traceback()
         lastErrorPID = newPIDCopy
+        lastErrorHandled = false
       end)
+    else
+      lastErrorCode = 0x000104
+      lastErrorMsg = "INVALID_FILE"
+      lastErrorStackDump = debug.traceback()
+      lastErrorPID = newPIDCopy
+      lastErrorHandled = false
     end
   end
   lib.PID_TABLE[newPIDCopy] = {
@@ -125,12 +141,13 @@ function lib.mainloop()
   while lastErrorHandled do
     os.sleep(0.05)
   end
-  for pid, _ in lib.PID_TABLE do
+  for pid, _ in pairs(lib.PID_TABLE) do
     lib.killProccess(pid)
   end
-  log = getLog(lastErrorCode, lastErrorMsg, 2)
+  local log = getLog(lastErrorCode, lastErrorMsg, 2)
   log["StackDump"] = lastErrorStackDump
   log["PID"] = lastErrorPID
+  lastErrorHandled = true
   return log
 end
 
