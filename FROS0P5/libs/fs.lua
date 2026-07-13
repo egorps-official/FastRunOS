@@ -39,7 +39,7 @@ local component = require("component")
 local computer = require("computer")
 local invoke = component.invoke
 local bootaddr = computer.getBootAddress()
-local config = loadfile("/FROS0P5/core/config.lua")
+local config = loadfile(bootaddr, "/FROS0P5/core/config.lua")
 local serialization = require("serialization")
 
 local function loadfile(addr, file)
@@ -83,7 +83,7 @@ function lib.scanDisks()
     end
   end
   
-  config = loadfile("/FROS0P5/core/config.lua")
+  config = loadfile(bootaddr, "/FROS0P5/core/config.lua")
   config["DiskAddrs"] = lib.addrs
   serialization.serialize(config)
   local f = io.open("/FROS0P5/core/config.lua", "w")
