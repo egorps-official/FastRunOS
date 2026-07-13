@@ -70,11 +70,11 @@ function lib.scanDisks()
     if componentType == "filesystem" then
       table.insert(scanned, addr)
       local letter
-      for i, v in pairs(lib.addrs) do
+      for i, v in lib.addrs do
         if v == addr then letter = i break end
       end
       if not letter then
-        for i, v in pairs(lib.addrs) do
+        for i, v in lib.addrs do
           if v == "" then 
             lib.addrs[i] = addr 
             break 
@@ -130,7 +130,7 @@ function lib.format(addr)
 
     local function clearDirectory(path)
         local list = proxy.list(path)
-        for _, name in ipairs(list) do
+        for _, name in list do
             local fullPath = path == "/" and "/" .. name or path .. "/" .. name
             if proxy.isDirectory(fullPath) then
                 clearDirectory(fullPath)
