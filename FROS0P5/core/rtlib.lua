@@ -66,11 +66,8 @@ local lastErrorCode, lastErrorMsg, lastErrorStackDump
 local lastErrorPID = 0
 local lastErrorHandled = true
 function lib.newProccess(path, title)
-  if not fs or not fs.getAddrPathByPath then
-    return getLog(0x000104, "INVALID_FILE", 2)
-  end
-  local dividedPath = fs.getAddrPathByPath(path)
-  if dividedPath.log and dividedPath.log.Code ~= 0x010100 then
+  local dividedPath = fs.dividePath(path)
+  if dividedPath.log.Code ~= 0x010100 or not fs.getDisk(dividedPath["addr"])["Filesystem"].exists(dividedPath["path"]) then
     return getLog(0x000104, "INVALID_FILE", 2)
   end
   lastPID = lastPID + 1
@@ -145,8 +142,8 @@ function lib.mainloop()
     lib.killProccess(pid)
   end
   local log = getLog(lastErrorCode, lastErrorMsg, 2)
-  log["StackDump"] = lastErrorStackDump
-  log["PID"] = lastErrorPID
+  log["log"]["StackDump"] = lastErrorStackDump
+  log["log"]["PID"] = lastErrorPID
   lastErrorHandled = true
   return log
 end
