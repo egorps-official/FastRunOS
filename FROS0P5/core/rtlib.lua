@@ -136,7 +136,7 @@ function lib.killProccess(PID)
   return getLog(0x000100, "OK", 0)
 end
 
-_G.core = lib
+_G["core"] = lib
 
 function lib.mainloop()
   while lastErrorHandled do
