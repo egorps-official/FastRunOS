@@ -12,8 +12,8 @@ return {
     },
     ["Language"] = "eng.lua",
     ["Resolution"] = {
-        ["X"] = 80,
-        ["Y"] = 25
+        ["X"] = "Auto",
+        ["Y"] = "Auto"
     },
     ["AutoRun"] = {"/FROS0P5/libs/uicore.lua"}
 }
