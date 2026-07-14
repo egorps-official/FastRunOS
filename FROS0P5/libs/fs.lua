@@ -221,4 +221,6 @@ function lib.dividePath(path, currentPath)
     return log
 end
 
+_G["fs"] = lib
+
 return lib
