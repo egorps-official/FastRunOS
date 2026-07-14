@@ -108,7 +108,7 @@ function lib.newProccess(path, title)
   end
   lib.PID_TABLE[newPIDCopy] = {
     ["Path"] = path,
-    ["Title"] = title,
+    ["Title"] = title or path,
     ["Thread"] = thread.create(task),
     ["Works"] = true
   }
