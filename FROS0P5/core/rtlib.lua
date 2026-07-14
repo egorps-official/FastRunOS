@@ -17,12 +17,14 @@ Code:
       0x02 - FS_LIB_NOT_FOUND
       0x03 - PROCCESS_ERR
       0x04 - INVALID_FILE
+      0x05 - INVALID_TASK
 
 Message:
   INVALID_PID - Invalid Proccess ID
   FS_LIB_NOT_FOUND - File System Library wasn't found
   PROCCESS_ERR - Custom Proccess Error
   INVALID_FILE - File wasn't found
+  INVALID_TASK - Invalid Task
 ]]--
 
 local function getLog(code, msg, status)
@@ -65,56 +67,81 @@ lib.PID_TABLE = {}
 local lastErrorCode, lastErrorMsg, lastErrorStackDump
 local lastErrorPID = 0
 local lastErrorHandled = true
-function lib.newProccess(path, title)
-  local dividedPath = fs.dividePath(path)
-  if dividedPath.log.Code ~= 0x010100 or not fs.getDisk(dividedPath["addr"])["Filesystem"].exists(dividedPath["path"]) then
-    return getLog(0x000104, "INVALID_FILE", 2)
-  end
-  lastPID = lastPID + 1
-  local newPIDCopy = lastPID
-  local function task()
+function lib.newProccess(task, title)
+  if type(task) == "string" then
+    local dividedPath = fs.dividePath(task)
     local extension = string.match(dividedPath["path"], "%.[^.]+$") or ""
-    if extension == ".app" then
-      local ok, result = xpcall(function()
-        loadfile(dividedPath["addr"], dividedPath["path"]).run()
-      end, function(err)
-        if not ok then
-          lastErrorCode = err["Code"] or 0x000103
-          lastErrorMsg = err["Msg"] or err
-          lastErrorStackDump = debug.traceback()
-          lastErrorPID = newPIDCopy
-          lastErrorHandled = false
-        end
-      end)
-    elseif extension == ".lua" then
-      local ok, result = xpcall(function()
-        loadfile(dividedPath["addr"], dividedPath["path"])
-      end, function(err)
-        if not ok then
-          lastErrorCode = err["Code"] or 0x000103
-          lastErrorMsg = err["Msg"] or err
-          lastErrorStackDump = debug.traceback()
-          lastErrorPID = newPIDCopy
-          lastErrorHandled = false
-        end
-      end)
-    else
-      lastErrorCode = 0x000104
-      lastErrorMsg = "INVALID_FILE"
-      lastErrorStackDump = debug.traceback()
-      lastErrorPID = newPIDCopy
-      lastErrorHandled = false
+    if dividedPath.log.Code ~= 0x010100 or (not fs.getDisk(dividedPath["addr"])["Filesystem"].exists(dividedPath["path"])) or (not extension == ".app") or (not extension == ".lua")  then
+      return getLog(0x000104, "INVALID_FILE", 2)
     end
+    lastPID = lastPID + 1
+    local newPIDCopy = lastPID
+    local function threadTask()
+      if extension == ".app" then
+        local ok, result = xpcall(function()
+          loadfile(dividedPath["addr"], dividedPath["path"]).run()
+        end, function(err)
+          if not ok then
+            lastErrorCode = err["Code"] or 0x000103
+            lastErrorMsg = err["Msg"] or err
+            lastErrorStackDump = debug.traceback()
+            lastErrorPID = newPIDCopy
+            lastErrorHandled = false
+          end
+        end)
+      elseif extension == ".lua" then
+        local ok, result = xpcall(function()
+          loadfile(dividedPath["addr"], dividedPath["path"])
+        end, function(err)
+          if not ok then
+            lastErrorCode = err["Code"] or 0x000103
+            lastErrorMsg = err["Msg"] or err
+            lastErrorStackDump = debug.traceback()
+            lastErrorPID = newPIDCopy
+            lastErrorHandled = false
+          end
+        end)
+      end
+    end
+    lib.PID_TABLE[newPIDCopy] = {
+      ["Path"] = task,
+      ["Title"] = title or task,
+      ["Thread"] = thread.create(threadTask),
+      ["Works"] = true
+    }
+    local log = getLog(0x000100, "OK", 0)
+    log["PID"] = newPIDCopy
+    return log
+  elseif type(task) == "function" then
+    local dividedPath = fs.dividePath(task)
+    if dividedPath.log.Code ~= 0x010100 or not fs.getDisk(dividedPath["addr"])["Filesystem"].exists(dividedPath["path"]) then
+      return getLog(0x000104, "INVALID_FILE", 2)
+    end
+    lastPID = lastPID + 1
+    local newPIDCopy = lastPID
+    local function threadTask()
+        local ok, result = xpcall(function()
+          task()
+        end, function(err)
+          if not ok then
+            lastErrorCode = err["Code"] or 0x000103
+            lastErrorMsg = err["Msg"] or err
+            lastErrorStackDump = debug.traceback()
+            lastErrorPID = newPIDCopy
+            lastErrorHandled = false
+          end
+        end)
+    end
+    lib.PID_TABLE[newPIDCopy] = {
+      ["Path"] = "",
+      ["Title"] = title or "Unknown Function",
+      ["Thread"] = thread.create(threadTask),
+      ["Works"] = true
+    }
+    local log = getLog(0x000100, "OK", 0)
+    log["PID"] = newPIDCopy
+    return log
   end
-  lib.PID_TABLE[newPIDCopy] = {
-    ["Path"] = path,
-    ["Title"] = title or path,
-    ["Thread"] = thread.create(task),
-    ["Works"] = true
-  }
-  local log = getLog(0x000100, "OK", 0)
-  log["PID"] = newPIDCopy
-  return log
 end
 
 function lib.setProccessWork(PID, status)
