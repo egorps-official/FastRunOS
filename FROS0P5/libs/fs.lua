@@ -63,16 +63,19 @@ function lib.init()
   return getLog(0x010100, "OK", 0)
 end
 
+function lib.getLetter(addr)
+  for i, v in lib.addrs do
+    if v == addr then return i end
+  end
+end
+
 function lib.scanDisks()
   local scanned = getLog(0x010100, "OK", 0)
   
   for addr, componentType in component.list() do
     if componentType == "filesystem" then
       table.insert(scanned, addr)
-      local letter
-      for i, v in lib.addrs do
-        if v == addr then letter = i break end
-      end
+      local letter = lib.getLetter(addr)
       if not letter then
         for i, v in lib.addrs do
           if v == "" then 
@@ -100,10 +103,7 @@ function lib.getDisk(addr)
   if component.type(addr) == "filesystem" then
     local info = getLog(0x010100, "OK", 0)
     local proxy = component.proxy(addr)
-    local letter
-    for i, v in lib.addrs do
-      if v == addr then letter = i break end
-    end
+    local letter = lib.getLetter(addr)
     if not letter then
       return getLog(0x010102, "UNSCANNED_DISK", 2)
     end
@@ -145,10 +145,13 @@ function lib.format(addr)
     return getLog(0x010100, "OK", 0)
 end
 
-function lib.getAddrPathByPath(path)
+function lib.dividePath(path, currentPath)
+    if not path or path == "" then
+        return getLog(0x010104, "INVALID_PATH", 2)
+    end
+
     local letter = string.sub(path, 1, 1):upper()
     local rest = string.sub(path, 3)
-    
     if letter:match("%a") and string.sub(path, 2, 2) == ":" then
         local addr = lib.addrs[letter]
         if not addr or addr == "" then
@@ -159,7 +162,7 @@ function lib.getAddrPathByPath(path)
         log["path"] = "/" .. rest
         return log
     end
-    
+
     if string.sub(path, 1, 4):upper() == "SYS:" then
         local addr = lib.addrs["SYS"]
         if not addr or addr == "" then
@@ -170,7 +173,7 @@ function lib.getAddrPathByPath(path)
         log["path"] = "/" .. string.sub(path, 5)
         return log
     end
-    
+
     if string.sub(path, 1, 1) == "/" then
         local addr = lib.addrs["SYS"]
         if not addr or addr == "" then
@@ -181,7 +184,36 @@ function lib.getAddrPathByPath(path)
         log["path"] = path
         return log
     end
-    
+
+    if currentPath and currentPath.addr and currentPath.path then
+        local fullPath = currentPath.path
+        if fullPath == "/" then
+            fullPath = "/" .. path
+        else
+            fullPath = fullPath .. "/" .. path
+        end
+
+        local parts = {}
+        for part in string.gmatch(fullPath, "[^/]+") do
+            if part == ".." then
+                if #parts > 0 then
+                    table.remove(parts)
+                else
+                    return getLog(0x010104, "INVALID_PATH", 2)
+                end
+            elseif part ~= "." and part ~= "" then
+                table.insert(parts, part)
+            end
+        end
+        local normalized = "/" .. table.concat(parts, "/")
+        if normalized == "" then normalized = "/" end
+
+        local log = getLog(0x010100, "OK", 0)
+        log["addr"] = currentPath.addr
+        log["path"] = normalized
+        return log
+    end
+
     return getLog(0x010104, "INVALID_PATH", 2)
 end
 
