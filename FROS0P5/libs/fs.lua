@@ -67,6 +67,7 @@ function lib.getLetter(addr)
   for i, v in lib.addrs do
     if v == addr then return i end
   end
+  return getLog(0x010101, "INVALID_ADDRESS", 2)
 end
 
 function lib.scanDisks()
