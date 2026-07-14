@@ -64,7 +64,7 @@ function lib.init()
 end
 
 function lib.getLetter(addr)
-  for i, v in lib.addrs do
+  for i, v in pairs(lib.addrs) do
     if v == addr then return i end
   end
   return getLog(0x010101, "INVALID_ADDRESS", 2)
@@ -77,8 +77,8 @@ function lib.scanDisks()
     if componentType == "filesystem" then
       table.insert(scanned, addr)
       local letter = lib.getLetter(addr)
-      if not letter then
-        for i, v in lib.addrs do
+      if type(letter) == "table" and letter.log.Code == 0x010101 then
+        for i, v in pairs(lib.addrs) do
           if v == "" then 
             lib.addrs[i] = addr 
             break 
@@ -90,7 +90,7 @@ function lib.scanDisks()
   
   config = loadfile(bootaddr, "/FROS0P5/core/config.lua")
   config["DiskAddrs"] = lib.addrs
-  data = "return " .. serialization.serialize(config)
+  local data = "return " .. serialization.serialize(config)
   local f = io.open("/FROS0P5/core/config.lua", "w")
   if f then
     f:write(data)
@@ -105,7 +105,7 @@ function lib.getDisk(addr)
     local info = getLog(0x010100, "OK", 0)
     local proxy = component.proxy(addr)
     local letter = lib.getLetter(addr)
-    if not letter then
+    if type(letter) == "table" then
       return getLog(0x010102, "UNSCANNED_DISK", 2)
     end
     info["Letter"] = letter
@@ -131,7 +131,7 @@ function lib.format(addr)
 
     local function clearDirectory(path)
         local list = proxy.list(path)
-        for _, name in list do
+        for _, name in ipairs(list) do
             local fullPath = path == "/" and "/" .. name or path .. "/" .. name
             if proxy.isDirectory(fullPath) then
                 clearDirectory(fullPath)
