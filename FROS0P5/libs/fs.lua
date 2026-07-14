@@ -150,6 +150,13 @@ function lib.dividePath(path, currentPath)
         return getLog(0x010104, "INVALID_PATH", 2)
     end
 
+    if not currentPath or not currentPath.addr or not currentPath.path then
+        currentPath = {
+            ["addr"] = lib.addrs["SYS"] or bootaddr,
+            ["path"] = "/"
+        }
+    end
+
     local letter = string.sub(path, 1, 1):upper()
     local rest = string.sub(path, 3)
     if letter:match("%a") and string.sub(path, 2, 2) == ":" then
@@ -185,36 +192,32 @@ function lib.dividePath(path, currentPath)
         return log
     end
 
-    if currentPath and currentPath.addr and currentPath.path then
-        local fullPath = currentPath.path
-        if fullPath == "/" then
-            fullPath = "/" .. path
-        else
-            fullPath = fullPath .. "/" .. path
-        end
-
-        local parts = {}
-        for part in string.gmatch(fullPath, "[^/]+") do
-            if part == ".." then
-                if #parts > 0 then
-                    table.remove(parts)
-                else
-                    return getLog(0x010104, "INVALID_PATH", 2)
-                end
-            elseif part ~= "." and part ~= "" then
-                table.insert(parts, part)
-            end
-        end
-        local normalized = "/" .. table.concat(parts, "/")
-        if normalized == "" then normalized = "/" end
-
-        local log = getLog(0x010100, "OK", 0)
-        log["addr"] = currentPath.addr
-        log["path"] = normalized
-        return log
+    local fullPath = currentPath.path
+    if fullPath == "/" then
+        fullPath = "/" .. path
+    else
+        fullPath = fullPath .. "/" .. path
     end
 
-    return getLog(0x010104, "INVALID_PATH", 2)
+    local parts = {}
+    for part in string.gmatch(fullPath, "[^/]+") do
+        if part == ".." then
+            if #parts > 0 then
+                table.remove(parts)
+            else
+                return getLog(0x010104, "INVALID_PATH", 2)
+            end
+        elseif part ~= "." and part ~= "" then
+            table.insert(parts, part)
+        end
+    end
+    local normalized = "/" .. table.concat(parts, "/")
+    if normalized == "" then normalized = "/" end
+
+    local log = getLog(0x010100, "OK", 0)
+    log["addr"] = currentPath.addr
+    log["path"] = normalized
+    return log
 end
 
 return lib
