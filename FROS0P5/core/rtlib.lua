@@ -78,21 +78,25 @@ function lib.newProccess(path, title)
       local ok, result = xpcall(function()
         loadfile(dividedPath["addr"], dividedPath["path"]).run()
       end, function(err)
-        lastErrorCode = err["Code"] or 0x000103
-        lastErrorMsg = err["Msg"] or err
-        lastErrorStackDump = debug.traceback()
-        lastErrorPID = newPIDCopy
-        lastErrorHandled = false
+        if not ok then
+          lastErrorCode = err["Code"] or 0x000103
+          lastErrorMsg = err["Msg"] or err
+          lastErrorStackDump = debug.traceback()
+          lastErrorPID = newPIDCopy
+          lastErrorHandled = false
+        end
       end)
     elseif extension == ".lua" then
       local ok, result = xpcall(function()
-        loadfile(dividedPath["addr"], dividedPath["path"])()
+        loadfile(dividedPath["addr"], dividedPath["path"])
       end, function(err)
-        lastErrorCode = err["Code"] or 0x000103
-        lastErrorMsg = err["Msg"] or err
-        lastErrorStackDump = debug.traceback()
-        lastErrorPID = newPIDCopy
-        lastErrorHandled = false
+        if not ok then
+          lastErrorCode = err["Code"] or 0x000103
+          lastErrorMsg = err["Msg"] or err
+          lastErrorStackDump = debug.traceback()
+          lastErrorPID = newPIDCopy
+          lastErrorHandled = false
+        end
       end)
     else
       lastErrorCode = 0x000104
