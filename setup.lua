@@ -14,7 +14,7 @@ end
 cls()
 io.write("\nInitializating setup... ")
 
-if maxW <= 80 and maxH <= 25 then
+if maxW < 160 and maxH < 50 then
   io.write("!\n")
   print("PC does not meet the system requirements: \nMinimal Resolution is 80x25 symbols.")
   os.exit(1)
