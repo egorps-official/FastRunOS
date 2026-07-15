@@ -172,7 +172,7 @@ function lib.mainloop()
   for pid, _ in pairs(lib.PID_TABLE) do
     lib.killProccess(pid)
   end
-  local log = getLog(lastErrorCode, lastErrorMsg, 2)
+  local log = getLog(lastErrorCode, lastErrorMsg, 1)
   log["log"]["StackDump"] = lastErrorStackDump
   log["log"]["PID"] = lastErrorPID
   lastErrorHandled = true
