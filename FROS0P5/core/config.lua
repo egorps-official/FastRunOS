@@ -10,10 +10,6 @@ return {
         ["K"] = "", ["L"] = "", ["M"] = "", ["N"] = "", ["O"] = "", ["P"] = "", ["Q"] = "", ["R"] = "", ["S"] = "", ["T"] = "",
         ["U"] = "", ["V"] = "", ["W"] = "", ["X"] = "", ["Y"] = "", ["Z"] = "", ["SYS"] = ""
     },
-    ["Language"] = "eng.lua",
-    ["Resolution"] = {
-        ["X"] = "Auto",
-        ["Y"] = "Auto"
-    },
+    ["Language"] = "en.lua",
     ["AutoRun"] = {"/FROS0P5/libs/uicore.lua"}
 }
