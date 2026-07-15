@@ -48,12 +48,15 @@ local function loadfile(addr, file)
 end
 
 local fs
+local config
 local rt
 local gpu
 
 local function init()
   fs = loadfile(bootaddr, "/FROS0P5/libs/fs.lua")
   if fs == nil then return getLog(0x000001, "FS_LIB_NOT_FOUND", 2) end
+  config = loadfile(bootaddr, "/FROS0P5/core/config.lua")
+  if config == nil then return getLog(0x000001, "CONFIG_NOT_FOUND", 2) end
   rt = loadfile(bootaddr, "/FROS0P5/core/rtlib.lua")
   if rt == nil then return getLog(0x000103, "RT_LIB_NOT_FOUND", 2) end
   gpu = loadfile(bootaddr, "/FROS0P5/libs/gpu.lua")
@@ -73,4 +76,8 @@ end
 
 local function debug(log)
   
+end
+
+local function emergencyDebug(log)
+
 end
